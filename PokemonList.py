@@ -6,7 +6,7 @@ import requests
 from operator import itemgetter
 import re
 
-fields = 'Letters of the Pokemon', '___ before the letters', '___ after the letters', 'size of the word'
+fields = 'Letters of the Pokemon', '___ before the letters', '___ after the letters'
 api_url_base = 'https://pokeapi.co/api/v2/' # Indirizzo endpoint per l'API
 headers = {'Content-Type': 'application/json'} # headers della chiamata
 
@@ -165,10 +165,10 @@ def fetch(controller, entries):
 def makeform(self, fields):
     entries = []
     for field in fields:
-        #row = tk.Frame(root)
-        lab = tk.Label(self, width=30, text=field, anchor='w')
-        ent = tk.Entry(self)
-        self.pack(side=tk.TOP, fill=tk.X, padx=20, pady=20)
+        row = tk.Frame(self)
+        lab = tk.Label(row, width=30, text=field, anchor='w')
+        ent = tk.Entry(row)
+        row.pack(side=tk.TOP, fill=tk.X, padx=20, pady=20)
         lab.pack(side=tk.LEFT)
         ent.pack(side=tk.RIGHT, expand=tk.YES, fill=tk.X)
         entries.append((field, ent))
@@ -176,9 +176,8 @@ def makeform(self, fields):
             
                         
 def show_entry_fields(controller, self):
-    #root = tk.Tk()
     ents = makeform(self, fields)
-    #root.bind('<Return>', (lambda event, e=ents: fetch(e)))   
+    self.bind('<Return>', (lambda event, e=ents: fetch(e)))   
     b1 = tk.Button(self, text='Show',
                   command=(lambda e=ents, controller=controller: fetch(controller, e)))
     b1.pack(side=tk.LEFT, padx=20, pady=20)
