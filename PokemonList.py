@@ -1,10 +1,13 @@
 
 import tkinter as tk
 from tkinter import font as tkfont
+from tkinter import ttk
 import json
 import requests
 from operator import itemgetter
 import re
+from PIL import Image
+from io import BytesIO
 
 fields = 'Letters of the Pokemon', '___ before the letters', '___ after the letters'
 api_url_base = 'https://pokeapi.co/api/v2/' # Indirizzo endpoint per l'API
@@ -15,6 +18,9 @@ pokemonNameLengthBeforePreparedForFunction = ""
 pokemonNameLengthAfterPreparedForFunction = ""
 listOfPokemonNames = []
 res = []
+listOfUrlPokemon = []
+pokemonList = []
+resultListPokemonNameSprite = []
 ifClear = True
 
 class SampleApp(tk.Tk):
@@ -46,23 +52,15 @@ class SampleApp(tk.Tk):
         self.show_frame("PageOne")
 
     def show_frame(self, page_name):
-        global listOfPokemonNames
+        global resultListPokemonNameSprite
         global ifClear
         '''Show a frame for the given page name'''
-        Lb1 = tk.Listbox(self)
+        if page_name == "PageTwo" and ifClear:
+            self.frames[page_name].refresh(controller=self)
         frame = self.frames[page_name]
         frame.tkraise()
         
-        if ifClear:
-            Lb1.destroy()
-        else:
-            ind = 0
-            while ind < len(listOfPokemonNames): 
-                Lb1.insert(ind, listOfPokemonNames[ind])
-                ind += 1
-            if Lb1.size() > 0:    
-                Lb1.pack()
-        ifClear = True
+        
         
         
 class PageTwo(tk.Frame):
@@ -73,8 +71,34 @@ class PageTwo(tk.Frame):
         label = tk.Label(self, text="This is result query", font=controller.title_font)
         label.pack(side="top", fill="x", pady=10)
         button = tk.Button(self, text="Go back to search",
-                           command=lambda: controller.show_frame("PageOne"))
+                           command=lambda: controller.show_frame(page_name = "PageOne"))
         button.pack()
+        tree=ttk.Treeview(self)
+        tree["columns"]=("one","two","three")
+        tree.column("#0", width=270, minwidth=270, stretch=tk.NO)
+        tree.column("one", width=150, minwidth=150, stretch=tk.NO)
+        tree.column("two", width=400, minwidth=200)
+        tree.column("three", width=80, minwidth=50, stretch=tk.NO)
+            
+        tree.heading("#0",text="Name",anchor=tk.W)
+        tree.heading("one", text="Date modified",anchor=tk.W)
+        tree.heading("two", text="Type",anchor=tk.W)
+        tree.heading("three", text="Size",anchor=tk.W)
+                        
+                        # Level 1
+        folder1=tree.insert("", 1, "1", text="Folder 1", values=("23-Jun-17 11:05","File folder",""))
+        tree.insert("", 2, "6", text="text_file.txt", values=("23-Jun-17 11:25","TXT file","1 KB"))
+        # Level 2
+        tree.insert(folder1, "end", "2", text="photo1.png", values=("23-Jun-17 11:28","PNG file","2.6 KB"))
+        tree.insert(folder1, "end", "3", text="photo2.png", values=("23-Jun-17 11:29","PNG file","3.2 KB"))
+        tree.insert(folder1, "end", "4", text="photo3.png", values=("23-Jun-17 11:30","PNG file","3.1 KB"))
+            
+        tree.pack(side=tk.TOP,fill=tk.X)
+        
+    def refresh(self, controller):
+        self.destroy()
+        self.__init__(self, controller)
+
         
         
     
@@ -86,6 +110,8 @@ class PageOne(tk.Frame):
     
     def __init__(self, parent, controller):
         global res
+        global listOfUrlPokemon
+        global pokemonList
         tk.Frame.__init__(self, parent)
         self.controller = controller
         label = tk.Label(self, text="This is pokemon name search", font=controller.title_font)
@@ -125,7 +151,8 @@ def get_account_info():
     else:
         return None
 
-def get_result_Pokemon_Name(res):
+def get_result_Pokemon_Name():
+    global res
     global pokemonNameLetters
     global pokemonNameLengthAfterPreparedForFunction
     global pokemonNameLengthBeforePreparedForFunction
@@ -136,10 +163,38 @@ def get_result_Pokemon_Name(res):
         if match != None:    
             if match.group():
                 listOfPokemonNames.append(match.group())
+                if len(listOfPokemonNames) > 0:
+                    get_result_Pokemon_Image()
+                
         
        
             
-            
+def get_result_Pokemon_Image():
+    global listOfPokemonNames
+    global resultListPokemonNameSprite
+    imageData = None
+    for pokemonName in listOfPokemonNames:
+        pokemonDataListMatch = list(filter(lambda pokemon: pokemon['name'] == pokemonName, pokemonList))
+        ''' for urlPokemon in listOfUrlPokemon:
+            if (pokemonName in pokemonList) and (urlPokemon in pokemonList) :
+                response = requests.get(urlPokemon, headers=headers) #effettuo la chiamata con attributi della funzione url ed headers precedentemente dichiarati
+                if response.status_code == 200:
+                    imageData = json.loads(response.content.decode('utf-8'))
+                else:
+                    imageData = None '''
+    for pokemonDataMatch in pokemonDataListMatch:
+        nameData = pokemonDataMatch['name']
+        urlData = pokemonDataMatch['url']
+        response = requests.get(urlData, headers=headers) #effettuo la chiamata con attributi della funzione url ed headers precedentemente dichiarati
+        if response.status_code == 200:
+            imageData = json.loads(response.content.decode('utf-8'))
+            spriteDataList = imageData['sprites']
+            spriteData = spriteDataList['front_default']
+            resultListPokemonNameSprite.append( {"name" : nameData, "urlSprite" : spriteData} )
+        else:
+            imageData = None
+        
+                
 
 def fetch(controller, entries):
     global ifClear
@@ -158,9 +213,9 @@ def fetch(controller, entries):
             resultAfter = entry[1].get()
             pokemonNameLengthAfterPreparedForFunction = '{' + resultAfter + '}'
             pass
-    get_result_Pokemon_Name(res)
+    get_result_Pokemon_Name()
     ifClear = False
-    controller.show_frame("PageTwo")
+    controller.show_frame(page_name = "PageTwo")
 
 def makeform(self, fields):
     entries = []
@@ -183,12 +238,7 @@ def show_entry_fields(controller, self):
     b1.pack(side=tk.LEFT, padx=20, pady=20)
     b2 = tk.Button(self, text='Quit', command=self.quit)
     b2.pack(side=tk.LEFT, padx=20, pady=20)
-
-def refresh(self):
-    self.destroy(self)
-    self.__init__()
-    
-    
+ 
 
 if __name__ == "__main__":
     app = SampleApp()
