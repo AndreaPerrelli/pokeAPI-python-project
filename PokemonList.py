@@ -21,7 +21,6 @@ res = []
 listOfUrlPokemon = []
 pokemonList = []
 resultListPokemonNameSprite = []
-ifClear = True
 
 class SampleApp(tk.Tk):
     
@@ -52,53 +51,69 @@ class SampleApp(tk.Tk):
         self.show_frame("PageOne")
 
     def show_frame(self, page_name):
-        global resultListPokemonNameSprite
-        global ifClear
         '''Show a frame for the given page name'''
-        if page_name == "PageTwo" and ifClear:
-            self.frames[page_name].refresh(controller=self)
         frame = self.frames[page_name]
+        if page_name == "PageTwo":
+            frame.event_generate("<<UpdateFrame>>")
         frame.tkraise()
         
         
         
         
 class PageTwo(tk.Frame):
-    
+    tree = None
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
         self.controller = controller
+        self.bind("<<UpdateFrame>>", self.on_show_frame)
         label = tk.Label(self, text="This is result query", font=controller.title_font)
         label.pack(side="top", fill="x", pady=10)
         button = tk.Button(self, text="Go back to search",
                            command=lambda: controller.show_frame(page_name = "PageOne"))
         button.pack()
-        tree=ttk.Treeview(self)
-        tree["columns"]=("one","two","three")
-        tree.column("#0", width=270, minwidth=270, stretch=tk.NO)
-        tree.column("one", width=150, minwidth=150, stretch=tk.NO)
-        tree.column("two", width=400, minwidth=200)
-        tree.column("three", width=80, minwidth=50, stretch=tk.NO)
+        
+        
+    def on_show_frame(self, event):
+        index = 0
+        self.tree=ttk.Treeview(self)
+        self.tree["columns"]=("Nome Pokemon","Immagine Pokemon")
+        self.tree.column("#0", width=270, minwidth=270, stretch=tk.NO)
+        self.tree.column("Nome Pokemon", width=150, minwidth=150, stretch=tk.NO)
+        self.tree.column("Immagine Pokemon", width=400, minwidth=200)
+        # tree.column("three", width=80, minwidth=50, stretch=tk.NO)
             
-        tree.heading("#0",text="Name",anchor=tk.W)
-        tree.heading("one", text="Date modified",anchor=tk.W)
-        tree.heading("two", text="Type",anchor=tk.W)
-        tree.heading("three", text="Size",anchor=tk.W)
+        self.tree.heading("#0",text="Nome Pokemon",anchor=tk.W)
+        self.tree.heading("Nome Pokemon", text="Immagine",anchor=tk.W)
+        self.tree.heading("Immagine Pokemon", text="",anchor=tk.W)
+        # tree.heading("three", text="Size",anchor=tk.W)
                         
                         # Level 1
-        folder1=tree.insert("", 1, "1", text="Folder 1", values=("23-Jun-17 11:05","File folder",""))
+        for resultPokemonNameSprite in resultListPokemonNameSprite:
+            self.tree.bind("<Double-1>", self.link_tree)
+            self.tree.insert("",index, str(index), text = resultPokemonNameSprite["name"], values = resultPokemonNameSprite["urlSprite"])
+            index = index + 1
+        ''' folder1=tree.insert("", 1, "1", text="Folder 1", values=("23-Jun-17 11:05","File folder",""))
         tree.insert("", 2, "6", text="text_file.txt", values=("23-Jun-17 11:25","TXT file","1 KB"))
         # Level 2
         tree.insert(folder1, "end", "2", text="photo1.png", values=("23-Jun-17 11:28","PNG file","2.6 KB"))
         tree.insert(folder1, "end", "3", text="photo2.png", values=("23-Jun-17 11:29","PNG file","3.2 KB"))
-        tree.insert(folder1, "end", "4", text="photo3.png", values=("23-Jun-17 11:30","PNG file","3.1 KB"))
+        tree.insert(folder1, "end", "4", text="photo3.png", values=("23-Jun-17 11:30","PNG file","3.1 KB")) '''
             
-        tree.pack(side=tk.TOP,fill=tk.X)
-        
-    def refresh(self, controller):
-        self.destroy()
-        self.__init__(self, controller)
+        self.tree.pack(side=tk.TOP,fill=tk.X)
 
+    def link_tree(self,event):
+        input_id = self.tree.selection()
+        self.input_item = self.tree.item(input_id,"values")
+        stringInputItem = str(self.input_item)
+        splitHTTPS = stringInputItem.split("//")
+        resultSplitHTTPS = splitHTTPS[1]
+        splitEndURL = resultSplitHTTPS.split("'")
+        stringResultSplit = str(splitEndURL[0])
+
+        #for opening the link in browser
+        import webbrowser
+        webbrowser.open('{}'.format(stringResultSplit))
+        #do whatever you want
         
         
     
@@ -238,6 +253,8 @@ def show_entry_fields(controller, self):
     b1.pack(side=tk.LEFT, padx=20, pady=20)
     b2 = tk.Button(self, text='Quit', command=self.quit)
     b2.pack(side=tk.LEFT, padx=20, pady=20)
+    
+
  
 
 if __name__ == "__main__":
