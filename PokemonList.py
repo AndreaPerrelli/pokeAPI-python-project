@@ -13,13 +13,6 @@ fields = 'Letters of the Pokemon', '___ before the letters', '___ after the lett
 api_url_base = 'https://pokeapi.co/api/v2/' # Indirizzo endpoint per l'API
 headers = {'Content-Type': 'application/json'} # headers della chiamata
 
-pokemonNameLetters = ""
-pokemonNameLengthBeforePreparedForFunction = ""
-pokemonNameLengthAfterPreparedForFunction = ""
-listOfPokemonNames = []
-res = []
-listOfUrlPokemon = []
-pokemonList = []
 resultListPokemonNameSprite = []
 
 class SampleApp(tk.Tk):
@@ -122,18 +115,20 @@ class PageTwo(tk.Frame):
 
 
 class PageOne(tk.Frame):
-    
+    res = ""
+    pokemonList = []
+    pokemonNameLetters = ""
+    pokemonNameLengthBeforePreparedForFunction = ""
+    pokemonNameLengthBeforePreparedForFunction = ""
+    listOfPokemonNames = []
     def __init__(self, parent, controller):
-        global res
-        global listOfUrlPokemon
-        global pokemonList
         tk.Frame.__init__(self, parent)
         self.controller = controller
         label = tk.Label(self, text="This is pokemon name search", font=controller.title_font)
         label.pack(side="top", fill="x", pady=10)
         data = get_account_info() # Incapsulo risposta della chiamata API nella variabile data
-        pokemonList = data['results'] # Estraggo dalla variabile data la lista di dizionari contenente il risultato e lo assegno a pokemonList
-        res = list(map(itemgetter('name'), pokemonList))
+        self.pokemonList = data['results'] # Estraggo dalla variabile data la lista di dizionari contenente il risultato e lo assegno a pokemonList
+        self.res = list(map(itemgetter('name'), self.pokemonList))
         show_entry_fields(controller, self)
         #button = tk.Button(self, text="Make the Query",
                            #command=lambda: controller.show_frame("PageTwo"))
@@ -166,37 +161,28 @@ def get_account_info():
     else:
         return None
 
-def get_result_Pokemon_Name():
-    global res
-    global pokemonNameLetters
-    global pokemonNameLengthAfterPreparedForFunction
-    global pokemonNameLengthBeforePreparedForFunction
-    regexString = rf"\b\w{pokemonNameLengthBeforePreparedForFunction}{pokemonNameLetters}\w{pokemonNameLengthAfterPreparedForFunction}\b"
-    for element in res:
-        global listOfPokemonNames
+def get_result_Pokemon_Name(self):
+    pokemonNameLettersResult = self.pokemonNameLetters
+    pokemonNameLengthBeforePreparedForFunctionResult = self.pokemonNameLengthBeforePreparedForFunction
+    pokemonNameLengthAfterPreparedForFunctionResult = self.pokemonNameLengthAfterPreparedForFunction
+    
+    regexString = rf"\b\w{pokemonNameLengthBeforePreparedForFunctionResult}{pokemonNameLettersResult}\w{pokemonNameLengthAfterPreparedForFunctionResult}\b"
+    for element in self.res:
         match = re.match(regexString, element)
         if match != None:    
             if match.group():
-                listOfPokemonNames.append(match.group())
-                if len(listOfPokemonNames) > 0:
-                    get_result_Pokemon_Image()
+                self.listOfPokemonNames.append(match.group())
+                if len(self.listOfPokemonNames) > 0:
+                    get_result_Pokemon_Image(self)
                 
         
        
             
-def get_result_Pokemon_Image():
-    global listOfPokemonNames
+def get_result_Pokemon_Image(self):
     global resultListPokemonNameSprite
     imageData = None
-    for pokemonName in listOfPokemonNames:
-        pokemonDataListMatch = list(filter(lambda pokemon: pokemon['name'] == pokemonName, pokemonList))
-        ''' for urlPokemon in listOfUrlPokemon:
-            if (pokemonName in pokemonList) and (urlPokemon in pokemonList) :
-                response = requests.get(urlPokemon, headers=headers) #effettuo la chiamata con attributi della funzione url ed headers precedentemente dichiarati
-                if response.status_code == 200:
-                    imageData = json.loads(response.content.decode('utf-8'))
-                else:
-                    imageData = None '''
+    for pokemonName in self.listOfPokemonNames:
+        pokemonDataListMatch = list(filter(lambda pokemon: pokemon['name'] == pokemonName, self.pokemonList))
     for pokemonDataMatch in pokemonDataListMatch:
         nameData = pokemonDataMatch['name']
         urlData = pokemonDataMatch['url']
@@ -211,25 +197,20 @@ def get_result_Pokemon_Image():
         
                 
 
-def fetch(controller, entries):
-    global ifClear
+def fetch(self, controller, entries):
     for entry in entries:
         if entry[0] == fields[0]:
-            global pokemonNameLetters
-            pokemonNameLetters = entry[1].get()
+            self.pokemonNameLetters = entry[1].get()
             pass
         if entry[0] == fields[1]:
-            global pokemonNameLengthBeforePreparedForFunction
             resultBefore = entry[1].get()
-            pokemonNameLengthBeforePreparedForFunction = '{' + resultBefore + '}'
+            self.pokemonNameLengthBeforePreparedForFunction = '{' + resultBefore + '}'
             pass
         if entry[0] == fields[2]:
-            global pokemonNameLengthAfterPreparedForFunction
             resultAfter = entry[1].get()
-            pokemonNameLengthAfterPreparedForFunction = '{' + resultAfter + '}'
+            self.pokemonNameLengthAfterPreparedForFunction = '{' + resultAfter + '}'
             pass
-    get_result_Pokemon_Name()
-    ifClear = False
+    get_result_Pokemon_Name(self)
     controller.show_frame(page_name = "PageTwo")
 
 def makeform(self, fields):
@@ -247,9 +228,9 @@ def makeform(self, fields):
                         
 def show_entry_fields(controller, self):
     ents = makeform(self, fields)
-    self.bind('<Return>', (lambda event, e=ents: fetch(e)))   
+    self.bind('<Return>', (lambda event, e=ents: fetch(self, e)))   
     b1 = tk.Button(self, text='Show',
-                  command=(lambda e=ents, controller=controller: fetch(controller, e)))
+                  command=(lambda e=ents, controller=controller: fetch(self, controller, e)))
     b1.pack(side=tk.LEFT, padx=20, pady=20)
     b2 = tk.Button(self, text='Quit', command=self.quit)
     b2.pack(side=tk.LEFT, padx=20, pady=20)
